@@ -16,6 +16,7 @@ DEFAULT_LLM_MODEL = "llama3"
 DEFAULT_BASE_URL = "http://localhost:11434"
 DEFAULT_COLLECTION_NAME = "rag_collection"
 
+os.environ["LD_LIBRARY_PATH"] = os.path.expanduser("~/.local/lib")
 
 print("SQLite version:", sqlite3.sqlite_version)
 if sqlite3.sqlite_version < "3.35.0":
