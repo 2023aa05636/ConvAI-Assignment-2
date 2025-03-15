@@ -14,23 +14,18 @@ DEFAULT_LLM_MODEL = "llama3"
 DEFAULT_BASE_URL = "http://localhost:11434"
 DEFAULT_COLLECTION_NAME = "rag_collection"
 
-# Print SQLite paths
-print("🔹 Checking SQLite installation...")
-print(f"LD_LIBRARY_PATH: {os.environ.get('LD_LIBRARY_PATH', 'Not Set')}")
-
-os.environ["LD_LIBRARY_PATH"] = os.path.expanduser("~/.local/lib")
-os.environ["PATH"] = f"{os.path.expanduser('~/.local/bin')}:{os.environ['PATH']}"
-
+os.environ["LD_LIBRARY_PATH"] = "/home/appuser/.local/lib"
+sys.modules.pop("sqlite3", None)  # Remove old sqlite3 reference
 import pysqlite3 as sqlite3
 
-
-# Check the SQLite version
-print("🔹 SQLite version in Python:", sqlite3.sqlite_version)
+print(f"✅ SQLite version in Python: {sqlite3.sqlite_version}")
 
 if sqlite3.sqlite_version < "3.35.0":
-    raise RuntimeError(f"❌ SQLite version {sqlite3.sqlite_version} is too old. Please use version 3.35.0 or newer.")
+    raise RuntimeError(f"❌ SQLite version {sqlite3.sqlite_version} is too old!")
 
-import chromadb
+import chromadb  # Now import ChromaDB after forcing SQLite reload
+from chromadb import Client
+
 
 # Placeholder for LlamaGuard
 def is_harmful_request(text):
@@ -56,7 +51,7 @@ class RAG_Chatbot:
         self.base_url = base_url
         self.collection_name = collection_name
         self.embedding = ChromaDBEmbeddingFunction(OllamaEmbeddings(model=self.llm_model, base_url=self.base_url))
-        self.chroma_client = chromadb.PersistentClient(path=os.path.join(os.getcwd(), "chroma_db"))
+        self.chroma_client = Client(path=os.path.join(os.getcwd(), "chroma_db"))
         self.vector_store = self.chroma_client.get_or_create_collection(
             name=self.collection_name,
             metadata={"description": "A collection for RAG with Ollama"},
@@ -92,7 +87,7 @@ class RAG_Chatbot:
         chunks = filter_complex_metadata(chunks)
 
         collection_name = "rag_collection3"
-        self.chroma_client = chromadb.PersistentClient(path=os.path.join(os.getcwd(), "chroma_db3"))
+        self.chroma_client = Client(path=os.path.join(os.getcwd(), "chroma_db3"))
         self.vector_store = self.chroma_client.get_or_create_collection(
             name=collection_name,
             metadata={"description": "A collection for RAG with Ollama"},
