@@ -1,0 +1,9 @@
+langchain
+streamlit
+streamlit_chat
+chromadb
+pypdf
+fastembed
+langchain_community
+langchain_ollama
+rank-bm25
