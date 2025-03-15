@@ -1,22 +1,42 @@
 #!/bin/bash
 
-# Download and compile SQLite 3.35.0+
-wget https://www.sqlite.org/2021/sqlite-autoconf-3350000.tar.gz
-tar -xvzf sqlite-autoconf-3350000.tar.gz
-cd sqlite-autoconf-3350000
+echo "🔹 Step 1: Checking existing SQLite version"
+sqlite3 --version || echo "SQLite is not installed or not found"
 
-# Configure and install SQLite
-./configure --prefix=$HOME/.local
-make
-make install
+echo "🔹 Step 2: Downloading SQLite 3.35.0+"
+wget https://www.sqlite.org/2021/sqlite-autoconf-3350000.tar.gz -O sqlite.tar.gz
 
-# Update LD_LIBRARY_PATH so Python uses the new SQLite version
+if [ -f "sqlite.tar.gz" ]; then
+    echo "✅ Download successful"
+else
+    echo "❌ Download failed"
+    exit 1
+fi
+
+echo "🔹 Step 3: Extracting SQLite"
+tar -xvzf sqlite.tar.gz
+
+cd sqlite-autoconf-3350000 || { echo "❌ Extraction failed"; exit 1; }
+
+echo "🔹 Step 4: Configuring SQLite"
+./configure --prefix=$HOME/.local || { echo "❌ Configure failed"; exit 1; }
+
+echo "🔹 Step 5: Compiling SQLite (this may take a while)"
+make -j$(nproc) || { echo "❌ Compilation failed"; exit 1; }
+
+echo "🔹 Step 6: Installing SQLite"
+make install || { echo "❌ Installation failed"; exit 1; }
+
+echo "🔹 Step 7: Updating library paths"
 echo 'export LD_LIBRARY_PATH=$HOME/.local/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+export LD_LIBRARY_PATH=$HOME/.local/lib:$LD_LIBRARY_PATH
 source ~/.bashrc
 
-# Clean up
-cd ..
-rm -rf sqlite-autoconf-3350000 sqlite-autoconf-3350000.tar.gz
+echo "🔹 Step 8: Verifying SQLite installation"
+sqlite3 --version || echo "❌ SQLite installation failed"
 
-# Verify SQLite version
-sqlite3 --version
+echo "🔹 Step 9: Cleanup"
+cd ..
+rm -rf sqlite-autoconf-3350000 sqlite.tar.gz
+
+echo "✅ SQLite setup complete"

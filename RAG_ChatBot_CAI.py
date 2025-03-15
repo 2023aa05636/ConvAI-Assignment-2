@@ -16,15 +16,20 @@ DEFAULT_LLM_MODEL = "llama3"
 DEFAULT_BASE_URL = "http://localhost:11434"
 DEFAULT_COLLECTION_NAME = "rag_collection"
 
+# Print SQLite paths
+print("🔹 Checking SQLite installation...")
+print(f"LD_LIBRARY_PATH: {os.environ.get('LD_LIBRARY_PATH', 'Not Set')}")
+
+# Ensure Python uses the updated SQLite
 os.environ["LD_LIBRARY_PATH"] = os.path.expanduser("~/.local/lib")
 
-print("SQLite version:", sqlite3.sqlite_version)
+print(f"🔹 SQLite version in Python: {sqlite3.sqlite_version}")
+
 if sqlite3.sqlite_version < "3.35.0":
     raise RuntimeError(
-        f"Your SQLite version {sqlite3.sqlite_version} is too old. "
-        "Please use version 3.35.0 or newer."
+        f"❌ SQLite version {sqlite3.sqlite_version} is too old. "
+        f"Please use version 3.35.0 or newer."
     )
-
 # Placeholder for LlamaGuard
 def is_harmful_request(text):
     harmful_keywords = ["violence", "hate speech", "self-harm", "explicit content"]
