@@ -8,4 +8,4 @@ langchain_community
 langchain_ollama
 rank-bm25
 onnxruntime>=1.17.0
-pysqlite3
+pysqlite3-binary

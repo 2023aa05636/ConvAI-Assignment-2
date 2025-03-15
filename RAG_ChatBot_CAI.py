@@ -21,7 +21,8 @@ print(f"LD_LIBRARY_PATH: {os.environ.get('LD_LIBRARY_PATH', 'Not Set')}")
 os.environ["LD_LIBRARY_PATH"] = os.path.expanduser("~/.local/lib")
 os.environ["PATH"] = f"{os.path.expanduser('~/.local/bin')}:{os.environ['PATH']}"
 
-import sqlite3
+import pysqlite3 as sqlite3
+
 
 # Check the SQLite version
 print("🔹 SQLite version in Python:", sqlite3.sqlite_version)
