@@ -3,8 +3,8 @@
 echo "🔹 Step 1: Checking existing SQLite version"
 sqlite3 --version || echo "SQLite is not installed or not found"
 
-echo "🔹 Step 2: Downloading SQLite 3.35.0+"
-wget https://www.sqlite.org/2021/sqlite-autoconf-3350000.tar.gz -O sqlite.tar.gz
+echo "🔹 Step 2: Downloading SQLite 3.39.2 (latest stable)"
+wget https://www.sqlite.org/2022/sqlite-autoconf-3390200.tar.gz -O sqlite.tar.gz
 
 if [ -f "sqlite.tar.gz" ]; then
     echo "✅ Download successful"
@@ -16,7 +16,7 @@ fi
 echo "🔹 Step 3: Extracting SQLite"
 tar -xvzf sqlite.tar.gz
 
-cd sqlite-autoconf-3350000 || { echo "❌ Extraction failed"; exit 1; }
+cd sqlite-autoconf-3390200 || { echo "❌ Extraction failed"; exit 1; }
 
 echo "🔹 Step 4: Configuring SQLite"
 ./configure --prefix=$HOME/.local || { echo "❌ Configure failed"; exit 1; }
@@ -32,11 +32,11 @@ echo 'export LD_LIBRARY_PATH=$HOME/.local/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
 export LD_LIBRARY_PATH=$HOME/.local/lib:$LD_LIBRARY_PATH
 source ~/.bashrc
 
-echo "🔹 Step 8: Verifying SQLite installation"
+echo "🔹 Step 8: Checking new SQLite version"
 sqlite3 --version || echo "❌ SQLite installation failed"
 
-echo "🔹 Step 9: Cleanup"
-cd ..
-rm -rf sqlite-autoconf-3350000 sqlite.tar.gz
+echo "🔹 Step 9: Reinstalling Python to Use New SQLite"
+sudo apt-get update
+sudo apt-get install -y python3 python3-dev python3-venv libsqlite3-dev
 
 echo "✅ SQLite setup complete"

@@ -1,6 +1,5 @@
 import streamlit as st
 from langchain_ollama import OllamaEmbeddings, OllamaLLM
-import chromadb
 import os
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders.pdf import PyPDFLoader
@@ -9,7 +8,6 @@ from rank_bm25 import BM25Okapi
 import tempfile
 import logging
 logging.basicConfig(level=logging.INFO)
-import sqlite3
 
 # Constants
 DEFAULT_LLM_MODEL = "llama3"
@@ -20,16 +18,19 @@ DEFAULT_COLLECTION_NAME = "rag_collection"
 print("🔹 Checking SQLite installation...")
 print(f"LD_LIBRARY_PATH: {os.environ.get('LD_LIBRARY_PATH', 'Not Set')}")
 
-# Ensure Python uses the updated SQLite
 os.environ["LD_LIBRARY_PATH"] = os.path.expanduser("~/.local/lib")
+os.environ["PATH"] = f"{os.path.expanduser('~/.local/bin')}:{os.environ['PATH']}"
 
-print(f"🔹 SQLite version in Python: {sqlite3.sqlite_version}")
+import sqlite3
+
+# Check the SQLite version
+print("🔹 SQLite version in Python:", sqlite3.sqlite_version)
 
 if sqlite3.sqlite_version < "3.35.0":
-    raise RuntimeError(
-        f"❌ SQLite version {sqlite3.sqlite_version} is too old. "
-        f"Please use version 3.35.0 or newer."
-    )
+    raise RuntimeError(f"❌ SQLite version {sqlite3.sqlite_version} is too old. Please use version 3.35.0 or newer.")
+
+import chromadb
+
 # Placeholder for LlamaGuard
 def is_harmful_request(text):
     harmful_keywords = ["violence", "hate speech", "self-harm", "explicit content"]
