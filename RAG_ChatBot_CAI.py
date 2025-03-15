@@ -9,11 +9,20 @@ from rank_bm25 import BM25Okapi
 import tempfile
 import logging
 logging.basicConfig(level=logging.INFO)
+import sqlite3
 
 # Constants
 DEFAULT_LLM_MODEL = "llama3"
 DEFAULT_BASE_URL = "http://localhost:11434"
 DEFAULT_COLLECTION_NAME = "rag_collection"
+
+
+print("SQLite version:", sqlite3.sqlite_version)
+if sqlite3.sqlite_version < "3.35.0":
+    raise RuntimeError(
+        f"Your SQLite version {sqlite3.sqlite_version} is too old. "
+        "Please use version 3.35.0 or newer."
+    )
 
 # Placeholder for LlamaGuard
 def is_harmful_request(text):
