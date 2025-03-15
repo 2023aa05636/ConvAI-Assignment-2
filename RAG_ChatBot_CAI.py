@@ -1,3 +1,6 @@
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import streamlit as st
 from langchain_ollama import OllamaEmbeddings, OllamaLLM
 import os
@@ -8,21 +11,11 @@ from rank_bm25 import BM25Okapi
 import tempfile
 import logging
 logging.basicConfig(level=logging.INFO)
-import sys
 
 # Constants
 DEFAULT_LLM_MODEL = "llama3"
 DEFAULT_BASE_URL = "http://localhost:11434"
 DEFAULT_COLLECTION_NAME = "rag_collection"
-
-os.environ["LD_LIBRARY_PATH"] = "/home/appuser/.local/lib"
-sys.modules.pop("sqlite3", None)  # Remove old sqlite3 reference
-import pysqlite3 as sqlite3
-
-print(f"✅ SQLite version in Python: {sqlite3.sqlite_version}")
-
-if sqlite3.sqlite_version < "3.35.0":
-    raise RuntimeError(f"❌ SQLite version {sqlite3.sqlite_version} is too old!")
 
 import chromadb  # Now import ChromaDB after forcing SQLite reload
 from chromadb import Client
