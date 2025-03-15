@@ -8,6 +8,7 @@ from rank_bm25 import BM25Okapi
 import tempfile
 import logging
 logging.basicConfig(level=logging.INFO)
+import sys
 
 # Constants
 DEFAULT_LLM_MODEL = "llama3"
