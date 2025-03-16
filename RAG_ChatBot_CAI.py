@@ -1,58 +1,56 @@
 __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-import streamlit as st
-from langchain_ollama import OllamaEmbeddings, OllamaLLM
 import os
+import streamlit as st
+import requests
+import logging
+import tempfile
+import chromadb
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders.pdf import PyPDFLoader
+from langchain_community.embeddings import SentenceTransformerEmbeddings
 from langchain_community.vectorstores.utils import filter_complex_metadata
 from rank_bm25 import BM25Okapi
-import tempfile
-import logging
+
 logging.basicConfig(level=logging.INFO)
 
 # Constants
-DEFAULT_LLM_MODEL = "llama3"
-DEFAULT_BASE_URL = "http://localhost:11434"
+DEFAULT_LLM_API_URL = "https://pawwi-conv-ai-assignment-2-llm-api.hf.space/generate/"  # Replace with your API
 DEFAULT_COLLECTION_NAME = "rag_collection"
-
-import chromadb  # Now import ChromaDB after forcing SQLite reload
-# from chromadb import Client
-
 
 # Placeholder for LlamaGuard
 def is_harmful_request(text):
     harmful_keywords = ["violence", "hate speech", "self-harm", "explicit content"]
-    for keyword in harmful_keywords:
-        if keyword in text.lower():
-            return True
-    return False
+    return any(keyword in text.lower() for keyword in harmful_keywords)
 
 class ChromaDBEmbeddingFunction:
-    def __init__(self, langchain_embeddings):
-        self.langchain_embeddings = langchain_embeddings
+    def __init__(self):
+        self.model = SentenceTransformerEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
     def __call__(self, input):
-        if isinstance(input, str):
-            input = [input]
-        return self.langchain_embeddings.embed_documents(input)
+        return self.model.embed_documents([input] if isinstance(input, str) else input)
 
 class RAG_Chatbot:
-    def __init__(self, llm_model=DEFAULT_LLM_MODEL, base_url=DEFAULT_BASE_URL, collection_name=DEFAULT_COLLECTION_NAME):
+    def __init__(self, collection_name=DEFAULT_COLLECTION_NAME, llm_api_url=DEFAULT_LLM_API_URL):
         self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=1024, chunk_overlap=100)
-        self.llm_model = llm_model
-        self.base_url = base_url
         self.collection_name = collection_name
-        self.embedding = ChromaDBEmbeddingFunction(OllamaEmbeddings(model=self.llm_model, base_url=self.base_url))
+        self.llm_api_url = llm_api_url
+        self.embedding = ChromaDBEmbeddingFunction()
+        
         self.chroma_client = chromadb.PersistentClient(path=os.path.join(os.getcwd(), "chroma_db"))
         self.vector_store = self.chroma_client.get_or_create_collection(
             name=self.collection_name,
-            metadata={"description": "A collection for RAG with Ollama"},
+            metadata={"description": "A collection for RAG"},
             embedding_function=self.embedding
         )
         self.bm25 = None
         self.documents = []
+        self.list_collections()
+
+    def list_collections(self):
+        print(self.chroma_client.list_collections())
+        return self.chroma_client.list_collections()
 
     def clear(self):
         self.vector_store = None
@@ -60,7 +58,6 @@ class RAG_Chatbot:
         self.chain = None
         self.bm25 = None
         self.documents = []
-
     def split_document_into_chunks(self, document, chunk_size=512):
         splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=0)
         chunks = splitter.split_text(document)
@@ -108,7 +105,6 @@ class RAG_Chatbot:
             with st.session_state["ingestion_spinner"], st.spinner(f"Ingesting {file.name}"):
                 self.ingest(file_path)
             os.remove(file_path)
-
     def query_chromadb(self, query_text, n_results=3):
         results = self.vector_store.query(query_texts=[query_text], n_results=n_results)
         print("Query Text:", query_text)
@@ -121,13 +117,22 @@ class RAG_Chatbot:
         query_tokens = query_text.split()
         scores = self.bm25.get_scores(query_tokens)
         top_n_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:n_results]
-        top_n_docs = [self.documents[i] for i in top_n_indices]
-        return top_n_docs
+        return [self.documents[i] for i in top_n_indices]
 
-    def query_ollama(self, prompt):
-        llm = OllamaLLM(model=self.llm_model)
-        return llm.invoke(prompt)
-
+    def query_llm(self, prompt):
+        try:
+            response = requests.post(self.llm_api_url, json={"prompt": prompt})
+            print("Response Status Code:", response.status_code)
+            print("Response Text:", response.text)  # Debugging line
+            response_json = response.json()  # This is where the error occurs
+            return response_json.get("response", "No response from LLM.")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"LLM API Request Error: {e}")
+            return "Error communicating with LLM."
+        except ValueError as e:  # JSON decoding error
+            logging.error(f"LLM API Response Error: {e}")
+            return f"Invalid response from LLM: {response.text}"
+    
     def query_chromadb_all(self):
         count = self.vector_store.count()
         results = self.vector_store.query(query_texts=[""], n_results=count)
@@ -155,17 +160,16 @@ class RAG_Chatbot:
         print("######## Retrieved Context ########")
         print(context)
 
-        augmented_prompt = f"Context: {context}\n\nQuestion: {query_text}\nAnswer:"
+        augmented_prompt = f"Context: {context}\n\nQuestion: {query_text}. Provide only the answer, without any context or explanations. \nAnswer:"
         print("######## Augmented Prompt ########")
         print(augmented_prompt)
 
-        response = self.query_ollama(augmented_prompt)
+        response = self.query_llm(augmented_prompt)
         return response
 
     def generate_response(self, input_text):
-        response = self.rag_pipeline(input_text)
-        return response
-
+        return self.rag_pipeline(input_text)
+    
     def display_chat_history(self):
         if "chat_history" not in st.session_state:
             st.session_state['chat_history'] = []
