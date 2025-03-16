@@ -160,7 +160,7 @@ class RAG_Chatbot:
         print("######## Retrieved Context ########")
         print(context)
 
-        augmented_prompt = f"Context: {context}\n\nQuestion: {query_text}. Provide only the answer, without any context or explanations. \nAnswer:"
+        augmented_prompt = f"Context: {context}\n\nQuestion: {query_text}. Provide only the answer and add the explaination only if it looks necessary and appropriate. \nAnswer:"
         print("######## Augmented Prompt ########")
         print(augmented_prompt)
 
